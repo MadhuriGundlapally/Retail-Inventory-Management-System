@@ -1,0 +1,29 @@
+{
+  "info": { "name": "Retail Inventory API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:8080" }, { "key": "productId", "value": "1" }],
+  "item": [
+    { "name": "Create product", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/products",
+      "body": { "mode": "raw", "raw": "{\n  \"sku\": \"SKU-1001\",\n  \"name\": \"USB-C Cable\",\n  \"category\": \"Accessories\",\n  \"price\": 12.99,\n  \"initialQuantity\": 40,\n  \"reorderLevel\": 10\n}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('productId', pm.response.json().id);"] } }] } },
+    { "name": "Create product - invalid (expect 400)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/products", "body": { "mode": "raw", "raw": "{ \"sku\": \"\", \"name\": \"\", \"price\": -1 }" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"] } }] } },
+    { "name": "Create product - duplicate SKU (expect 409)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/products", "body": { "mode": "raw", "raw": "{ \"sku\": \"SKU-1001\", \"name\": \"Dup\", \"price\": 1 }" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('409 Conflict', () => pm.response.to.have.status(409));"] } }] } },
+    { "name": "List products", "request": { "method": "GET", "url": "{{baseUrl}}/api/products" } },
+    { "name": "Get product", "request": { "method": "GET", "url": "{{baseUrl}}/api/products/{{productId}}" } },
+    { "name": "Get unknown product (expect 404)", "request": { "method": "GET", "url": "{{baseUrl}}/api/products/999999" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"] } }] },
+    { "name": "Update product", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/products/{{productId}}", "body": { "mode": "raw", "raw": "{ \"sku\": \"SKU-1001\", \"name\": \"USB-C Cable 2m\", \"category\": \"Accessories\", \"price\": 14.99, \"reorderLevel\": 15 }" } } },
+    { "name": "Receive stock (+25)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/stock/{{productId}}/adjust", "body": { "mode": "raw", "raw": "{ \"delta\": 25, \"reason\": \"restock\" }" } } },
+    { "name": "Remove too much stock (expect 409)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+      "url": "{{baseUrl}}/api/stock/{{productId}}/adjust", "body": { "mode": "raw", "raw": "{ \"delta\": -100000 }" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('409 Conflict', () => pm.response.to.have.status(409));"] } }] },
+    { "name": "Low stock report", "request": { "method": "GET", "url": "{{baseUrl}}/api/stock/low" } },
+    { "name": "Delete product", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/products/{{productId}}" } }
+  ]
+}
